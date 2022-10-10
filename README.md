@@ -6,9 +6,17 @@ This library was made with Crow web services in mind. Since BSON is a relatively
 that is easily converted to and from JSON, one can use the same serialization code for MongoDB
 persistence, message queues and HTTP requests.
 
+# features
+
+ - boilerplate generation macros
+ - vector<->array and (unordered_)map<->document mapping
+ - optional (value or null) fields with std::optional
+ - fully recursive (types like `optional<vector<map<string, Entity>>>` are handled correctly)
+
+
 # usage
 
-Include `bs11n.hpp` in any project with [mongo-cxx-driver](https://github.com/mongodb/mongo-cxx-driver) set up.
+Include `bs11n.hpp` in any project that uses [mongo-cxx-driver](https://github.com/mongodb/mongo-cxx-driver).
 
 # example
 

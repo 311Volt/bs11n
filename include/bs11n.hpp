@@ -89,19 +89,17 @@ namespace bs11n {
 	};
 
 	template<typename T>
-	concept Serializable = TriviallySerializable<T> || BasicSerializable<T> || DocumentClass<T>;
+	concept DirectlySerializable = TriviallySerializable<T> || BasicSerializable<T> || DocumentClass<T>;
 
 	template<typename T>
-	concept SerializableMap = requires(T map) {
+	concept Map = requires(T map) {
 		requires std::convertible_to<typename T::key_type, std::string>;
-		requires Serializable<typename T::mapped_type>;
 		{map.begin()} -> std::same_as<typename T::iterator>;
 		{map.end()} -> std::same_as<typename T::iterator>;
 	};
 
 	template<typename T>
-	concept SerializableList = requires(T list) {
-		requires Serializable<typename T::value_type>;
+	concept List = requires(T list) {
 		{list.begin()} -> std::same_as<typename T::iterator>;
 		{list.end()} -> std::same_as<typename T::iterator>;
 		list.push_back(typename T::value_type{});
@@ -110,10 +108,38 @@ namespace bs11n {
 	};
 
 	template<typename T>
-	concept SerializableOptional = requires(T) {
+	concept Optional = requires(T) {
 		requires std::convertible_to<std::nullopt_t, T>;
-		requires Serializable<typename T::value_type>;
 	};
+
+	template<typename T>
+	struct IsSerializable: std::false_type {};
+
+	template<DirectlySerializable T>
+	struct IsSerializable<T>: std::true_type {};
+
+	template<List T>
+	struct IsSerializable<T>: IsSerializable<typename T::value_type> {};
+
+	template<Map T>
+	struct IsSerializable<T>: IsSerializable<typename T::mapped_type> {};
+
+	template<Optional T>
+	struct IsSerializable<T>: IsSerializable<typename T::value_type> {};
+
+	template<typename T>
+	concept Serializable = IsSerializable<T>::value;
+
+	template<typename T>
+	concept SerializableMap = Map<T> && Serializable<typename T::mapped_type>;
+
+	template<typename T>
+	concept SerializableList = List<T> && Serializable<typename T::value_type>;
+
+	template<typename T>
+	concept SerializableOptional = Optional<T> && Serializable<typename T::value_type>;
+
+	
 
 	template<bsoncxx::type expected>
 	void CheckType(bsoncxx::type actual)
@@ -221,6 +247,21 @@ namespace bs11n {
 #undef BS11N_BASIC_SERIALIZABLE
 
 	template<SerializableMap T>
+	bsoncxx::types::bson_value::value Serialize(const T& map);
+	template<SerializableMap T>
+	T Deserialize(bsoncxx::types::bson_value::view val);
+
+	template<SerializableList T>
+	bsoncxx::types::bson_value::value Serialize(const T& list);
+	template<SerializableList T>
+	T Deserialize(bsoncxx::types::bson_value::view val);
+	
+	template<SerializableOptional T>
+	bsoncxx::types::bson_value::value Serialize(const T& value);
+	template<SerializableOptional T>
+	T Deserialize(bsoncxx::types::bson_value::view val);
+
+	template<SerializableMap T>
 	bsoncxx::types::bson_value::value Serialize(const T& map)
 	{
 		namespace bld = bsoncxx::builder::basic;
@@ -238,7 +279,7 @@ namespace bs11n {
 	{
 		T ret;
 		for(const auto& element: val.get_document().value) {
-			ret.insert({std::string{element.key()}, Deserialize<typename T::mapped_type>(element.get_value())});
+			ret[std::string{element.key()}] = Deserialize<typename T::mapped_type>(element.get_value());
 		}
 		return ret;
 	}

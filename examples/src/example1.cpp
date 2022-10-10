@@ -1,5 +1,4 @@
 #include <bs11n.hpp>
-#include <map>
 #include <iostream>
 
 #include <bsoncxx/json.hpp>
@@ -23,7 +22,7 @@ struct User {
 	std::string lastName;
 	std::optional<bsoncxx::types::b_date> dateRegistered;
 	std::vector<int> favoriteNumbers;
-	std::map<std::string, Address> addresses;
+	std::unordered_map<std::string, Address> addresses;
 	Consents consents;
 	std::vector<uint8_t> bin;
 
