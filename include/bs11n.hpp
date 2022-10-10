@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include <span>
 #include <stdexcept>
 #include <concepts>
 
@@ -105,6 +106,7 @@ namespace bs11n {
 		{list.end()} -> std::same_as<typename T::iterator>;
 		list.push_back(typename T::value_type{});
 		requires !std::same_as<T, std::basic_string<typename T::value_type>>;
+		requires !std::same_as<T, std::vector<uint8_t>>;
 	};
 
 	template<typename T>
@@ -131,7 +133,6 @@ namespace bs11n {
 	template<TriviallySerializable T>
 	T Deserialize(bsoncxx::types::bson_value::view val)
 	{
-		
 	#define BSONCXX_ENUM(typeName, typenum) \
 		if constexpr(bsoncxx::type{typenum} == T::type_id) { \
 			CheckType<T::type_id>(val.type()); \
@@ -183,7 +184,18 @@ namespace bs11n {
 	struct OIDTransferStruct {
 		bsoncxx::oid oid;
 		inline OIDTransferStruct(bsoncxx::types::b_oid oid) : oid(oid.value) {}
-		operator bsoncxx::oid() {return oid;}
+		inline operator bsoncxx::oid() {return oid;}
+	};
+
+	struct BinaryTransferStruct {
+		std::span<uint8_t> data;
+		inline BinaryTransferStruct(bsoncxx::types::b_binary bin) 
+			: data((decltype(data)::pointer)bin.bytes, (decltype(data)::size_type)bin.size) 
+		{}
+		inline operator std::vector<uint8_t>()
+		{
+			return std::vector<uint8_t>(data.begin(), data.end());
+		}
 	};
 
 #define BS11N_BASIC_SERIALIZABLE(typeName, conversionType, bsonType) \
@@ -203,6 +215,7 @@ namespace bs11n {
 	
 	BS11N_BASIC_SERIALIZABLE(std::string, std::string, string)
 	BS11N_BASIC_SERIALIZABLE(bsoncxx::oid, OIDTransferStruct, oid)
+	BS11N_BASIC_SERIALIZABLE(std::vector<uint8_t>, BinaryTransferStruct, binary)
 	
 
 #undef BS11N_BASIC_SERIALIZABLE

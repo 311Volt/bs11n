@@ -25,8 +25,9 @@ struct User {
 	std::vector<int> favoriteNumbers;
 	std::map<std::string, Address> addresses;
 	Consents consents;
+	std::vector<uint8_t> bin;
 
-	BS11N_DOCUMENT(firstName, lastName, dateRegistered, favoriteNumbers, addresses, consents)
+	BS11N_DOCUMENT(firstName, lastName, dateRegistered, favoriteNumbers, addresses, consents, bin)
 };
 
 int main()
@@ -38,7 +39,8 @@ int main()
 		.addresses = {
 			{"main", Address{.street = "example1", .number = 7}},
 			{"other", Address{.street = "example2", .number = 17}}
-		}
+		},
+		.bin = {1,2,3,4,5,6,7}
 	};
 
 	bsoncxx::document::value serialized = user.bs11nDump();
