@@ -11,7 +11,7 @@ target_include_directories(bs11n INTERFACE include)
 
 add_subdirectory(examples)
 
-target_link_libraries(bs11n INTERFACE mongo::bsoncxx_shared)
+target_link_libraries(bs11n INTERFACE mongo::bsoncxx_static)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
